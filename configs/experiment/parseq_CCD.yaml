@@ -1,0 +1,4 @@
+# @package _global_
+# Experiment CCD: Confusion-aware Class Decomposition
+defaults:
+  - override /model: parseq

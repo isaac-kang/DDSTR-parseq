@@ -1,0 +1,4 @@
+# @package _global_
+# Experiment CLD: Confidence-based Label Denoising
+defaults:
+  - override /model: parseq

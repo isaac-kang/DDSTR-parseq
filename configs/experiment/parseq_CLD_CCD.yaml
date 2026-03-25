@@ -1,0 +1,4 @@
+# @package _global_
+# Experiment CLD_CCD: Denoising (CLD) + Decomposition (CCD)
+defaults:
+  - override /model: parseq
