@@ -389,9 +389,8 @@ def perform_pl(model, dataset_path, dataset_name, charset, confusion_detail, ext
         lmdb_output_path = Path(lmdb_output_path)
         lmdb_output_path.mkdir(parents=True, exist_ok=True)
 
-        # Use source data.mdb file size with generous margin
         src_mdb = Path(dataset_path) / 'data.mdb'
-        map_size = max(src_mdb.stat().st_size * 10, 1024 * 1024 * 100)  # 10x or at least 100MB
+        map_size = max(int(src_mdb.stat().st_size * 1.5), 1024 * 1024 * 100)
 
         dst_env = lmdb_lib.open(str(lmdb_output_path), map_size=map_size)
         with src_env.begin() as src_txn, dst_env.begin(write=True) as dst_txn:

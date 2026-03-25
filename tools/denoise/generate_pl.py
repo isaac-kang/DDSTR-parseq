@@ -55,7 +55,7 @@ def copy_lmdb_with_pl(src_dir, dst_dir, pl_decisions, ds_name):
 
     src_env = lmdb_lib.open(str(src_dir), readonly=True, lock=False)
     src_mdb = src_dir / 'data.mdb'
-    map_size = max(src_mdb.stat().st_size * 4, 1024 * 1024 * 1024)
+    map_size = max(int(src_mdb.stat().st_size * 1.5), 1024 * 1024 * 100)
     dst_env = lmdb_lib.open(str(dst_dir), map_size=map_size)
 
     with src_env.begin() as src_txn:
