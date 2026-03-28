@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Unified test script for DDSTR.
+"""Test script for PARSeq models trained with Pseudo-Labeling (PL) extended charset.
 
-For baseline/B models: standard evaluation.
-For A/BA models: pass --unicode_mapping to use PLCharsetAdapter.
+Identical to test.py, but replaces model.charset_adapter with PLCharsetAdapter so that
+extended Unicode variant characters predicted by the PL model are mapped back to their
+base characters before comparison with ground-truth labels.
 """
 
 import argparse
@@ -100,15 +101,19 @@ def main():
     parser.add_argument('--data_root', default='~/data/STR/parseq/english/lmdb')
     parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--num_workers', type=int, default=4)
-    parser.add_argument('--cased', action='store_true', default=False)
-    parser.add_argument('--punctuation', action='store_true', default=False)
-    parser.add_argument('--new', action='store_true', default=False)
-    parser.add_argument('--rotation', type=int, default=0)
+    parser.add_argument('--cased', action='store_true', default=False, help='Cased comparison')
+    parser.add_argument('--punctuation', action='store_true', default=False, help='Check punctuation')
+    parser.add_argument('--new', action='store_true', default=False, help='Evaluate on new benchmark datasets')
+    parser.add_argument('--rotation', type=int, default=0, help='Angle of rotation (counter clockwise) in degrees.')
     parser.add_argument('--device', default='cuda')
-    parser.add_argument('--unicode_mapping', default=None,
-                        help='Path to unicode_mapping.json (required for A/BA models)')
+    parser.add_argument(
+        '--unicode_mapping',
+        default='confusion_pl_output/unicode_mapping.json',
+        help='Path to unicode_mapping.json produced by confusion_and_pl.py',
+    )
     args, unknown = parser.parse_known_args()
     args.data_root = str(Path(args.data_root).expanduser().resolve())
+    args.unicode_mapping = str(Path(args.unicode_mapping).expanduser().resolve())
     kwargs = parse_model_args(unknown)
 
     charset_test = string.digits + string.ascii_lowercase
@@ -119,23 +124,28 @@ def main():
     kwargs.update({'charset_test': charset_test})
     print(f'Additional keyword arguments: {kwargs}')
 
-    model = load_from_checkpoint(args.checkpoint, **kwargs).eval().to(args.device)
+    # Load unicode_mapping.json and build ext_to_base mapping
+    with open(args.unicode_mapping, 'r', encoding='utf-8') as f:
+        unicode_mapping = json.load(f)
+    ext_to_base = {v['unicode']: v['base_char'] for v in unicode_mapping.values()}
+    print(f'Loaded unicode mapping: {len(ext_to_base)} extended chars from {args.unicode_mapping}')
 
-    # For A/BA models: replace charset_adapter with PLCharsetAdapter
-    ext_to_base = {}
-    if args.unicode_mapping:
-        mapping_path = str(Path(args.unicode_mapping).expanduser().resolve())
-        with open(mapping_path, 'r', encoding='utf-8') as f:
-            unicode_mapping = json.load(f)
-        ext_to_base = {v['unicode']: v['base_char'] for v in unicode_mapping.values()}
-        model.charset_adapter = PLCharsetAdapter(charset_test, ext_to_base)
-        print(f'Using PLCharsetAdapter with {len(ext_to_base)} extended chars')
+    model = load_from_checkpoint(args.checkpoint, **kwargs).eval().to(args.device)
+    # Replace charset_adapter with PLCharsetAdapter to map extended chars back to base chars
+    model.charset_adapter = PLCharsetAdapter(charset_test, ext_to_base)
 
     hp = model.hparams
     datamodule = SceneTextDataModule(
-        args.data_root, '_unused_', hp.img_size, hp.max_label_length,
-        hp.charset_train, charset_test, args.batch_size, args.num_workers,
-        False, rotation=args.rotation,
+        args.data_root,
+        '_unused_',
+        hp.img_size,
+        hp.max_label_length,
+        hp.charset_train,
+        charset_test,
+        args.batch_size,
+        args.num_workers,
+        False,
+        rotation=args.rotation,
     )
 
     test_set = SceneTextDataModule.TEST_BENCHMARK_SUB + SceneTextDataModule.TEST_BENCHMARK
@@ -143,7 +153,7 @@ def main():
         test_set += SceneTextDataModule.TEST_NEW
     test_set = sorted(set(test_set))
 
-    ext_chars = set(ext_to_base.keys()) if args.unicode_mapping else set()
+    ext_chars = set(ext_to_base.keys())
 
     results = {}
     max_width = max(map(len, test_set))

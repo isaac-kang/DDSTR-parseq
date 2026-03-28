@@ -17,7 +17,8 @@ DEFAULT_STEPS="2"
 source "$SCRIPT_DIR/_parse_steps.sh"
 
 DATA_ROOT="$(eval echo "${DATA_ROOT:-~/data/STR/parseq/english/lmdb}")"
-CONFUSION_OUTPUT="confusion_pl_output"
+# CONFUSION_OUTPUT="confusion_pl_output"
+CONFUSION_OUTPUT="confusion_pl_output_debug"
 CHECKPOINT="${CHECKPOINT:-pretrained=parseq}"
 
 if run_step 1; then
@@ -29,7 +30,9 @@ if run_step 1; then
         --output_dir "$CONFUSION_OUTPUT" \
         --min_rate 0.001 \
         --pl_datasets train/real \
-        --pl_output_root "${DATA_ROOT}/decomposed"
+        --pl_output_root "${DATA_ROOT}/decomposed"\
+        --skip_pl \
+        --cm_src_data_dirs val \
     elapsed 1
 fi
 

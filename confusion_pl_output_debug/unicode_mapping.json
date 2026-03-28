@@ -1,0 +1,401 @@
+{
+  "0_1": {
+    "unicode": "⁰",
+    "codepoint": "U+2070",
+    "unicode_name": "SUPERSCRIPT ZERO",
+    "base_char": "0",
+    "confused_with": "O"
+  },
+  "7_1": {
+    "unicode": "⁷",
+    "codepoint": "U+2077",
+    "unicode_name": "SUPERSCRIPT SEVEN",
+    "base_char": "7",
+    "confused_with": "1"
+  },
+  "C_1": {
+    "unicode": "Ç",
+    "codepoint": "U+00C7",
+    "unicode_name": "LATIN CAPITAL LETTER C WITH CEDILLA",
+    "base_char": "C",
+    "confused_with": "G"
+  },
+  "C_2": {
+    "unicode": "Ć",
+    "codepoint": "U+0106",
+    "unicode_name": "LATIN CAPITAL LETTER C WITH ACUTE",
+    "base_char": "C",
+    "confused_with": "0"
+  },
+  "C_3": {
+    "unicode": "Ĉ",
+    "codepoint": "U+0108",
+    "unicode_name": "LATIN CAPITAL LETTER C WITH CIRCUMFLEX",
+    "base_char": "C",
+    "confused_with": "L"
+  },
+  "D_1": {
+    "unicode": "Ď",
+    "codepoint": "U+010E",
+    "unicode_name": "LATIN CAPITAL LETTER D WITH CARON",
+    "base_char": "D",
+    "confused_with": "O"
+  },
+  "E_1": {
+    "unicode": "È",
+    "codepoint": "U+00C8",
+    "unicode_name": "LATIN CAPITAL LETTER E WITH GRAVE",
+    "base_char": "E",
+    "confused_with": "B"
+  },
+  "G_1": {
+    "unicode": "Ĝ",
+    "codepoint": "U+011C",
+    "unicode_name": "LATIN CAPITAL LETTER G WITH CIRCUMFLEX",
+    "base_char": "G",
+    "confused_with": "C"
+  },
+  "G_2": {
+    "unicode": "Ğ",
+    "codepoint": "U+011E",
+    "unicode_name": "LATIN CAPITAL LETTER G WITH BREVE",
+    "base_char": "G",
+    "confused_with": "O"
+  },
+  "H_1": {
+    "unicode": "Ĥ",
+    "codepoint": "U+0124",
+    "unicode_name": "LATIN CAPITAL LETTER H WITH CIRCUMFLEX",
+    "base_char": "H",
+    "confused_with": "M"
+  },
+  "H_2": {
+    "unicode": "Ȟ",
+    "codepoint": "U+021E",
+    "unicode_name": "LATIN CAPITAL LETTER H WITH CARON",
+    "base_char": "H",
+    "confused_with": "P"
+  },
+  "I_1": {
+    "unicode": "Ì",
+    "codepoint": "U+00CC",
+    "unicode_name": "LATIN CAPITAL LETTER I WITH GRAVE",
+    "base_char": "I",
+    "confused_with": "l"
+  },
+  "I_2": {
+    "unicode": "Í",
+    "codepoint": "U+00CD",
+    "unicode_name": "LATIN CAPITAL LETTER I WITH ACUTE",
+    "base_char": "I",
+    "confused_with": "1"
+  },
+  "I_3": {
+    "unicode": "Î",
+    "codepoint": "U+00CE",
+    "unicode_name": "LATIN CAPITAL LETTER I WITH CIRCUMFLEX",
+    "base_char": "I",
+    "confused_with": "E"
+  },
+  "L_1": {
+    "unicode": "Ĺ",
+    "codepoint": "U+0139",
+    "unicode_name": "LATIN CAPITAL LETTER L WITH ACUTE",
+    "base_char": "L",
+    "confused_with": "1"
+  },
+  "M_1": {
+    "unicode": "Ḿ",
+    "codepoint": "U+1E3E",
+    "unicode_name": "LATIN CAPITAL LETTER M WITH ACUTE",
+    "base_char": "M",
+    "confused_with": "H"
+  },
+  "M_2": {
+    "unicode": "Ṁ",
+    "codepoint": "U+1E40",
+    "unicode_name": "LATIN CAPITAL LETTER M WITH DOT ABOVE",
+    "base_char": "M",
+    "confused_with": "N"
+  },
+  "O_1": {
+    "unicode": "Ò",
+    "codepoint": "U+00D2",
+    "unicode_name": "LATIN CAPITAL LETTER O WITH GRAVE",
+    "base_char": "O",
+    "confused_with": "U"
+  },
+  "O_2": {
+    "unicode": "Ó",
+    "codepoint": "U+00D3",
+    "unicode_name": "LATIN CAPITAL LETTER O WITH ACUTE",
+    "base_char": "O",
+    "confused_with": "0"
+  },
+  "P_1": {
+    "unicode": "Ṕ",
+    "codepoint": "U+1E54",
+    "unicode_name": "LATIN CAPITAL LETTER P WITH ACUTE",
+    "base_char": "P",
+    "confused_with": "F"
+  },
+  "R_1": {
+    "unicode": "Ŕ",
+    "codepoint": "U+0154",
+    "unicode_name": "LATIN CAPITAL LETTER R WITH ACUTE",
+    "base_char": "R",
+    "confused_with": "A"
+  },
+  "R_2": {
+    "unicode": "Ŗ",
+    "codepoint": "U+0156",
+    "unicode_name": "LATIN CAPITAL LETTER R WITH CEDILLA",
+    "base_char": "R",
+    "confused_with": "B"
+  },
+  "R_3": {
+    "unicode": "Ř",
+    "codepoint": "U+0158",
+    "unicode_name": "LATIN CAPITAL LETTER R WITH CARON",
+    "base_char": "R",
+    "confused_with": "K"
+  },
+  "S_1": {
+    "unicode": "Ś",
+    "codepoint": "U+015A",
+    "unicode_name": "LATIN CAPITAL LETTER S WITH ACUTE",
+    "base_char": "S",
+    "confused_with": "2"
+  },
+  "S_2": {
+    "unicode": "Ŝ",
+    "codepoint": "U+015C",
+    "unicode_name": "LATIN CAPITAL LETTER S WITH CIRCUMFLEX",
+    "base_char": "S",
+    "confused_with": "C"
+  },
+  "T_1": {
+    "unicode": "Ţ",
+    "codepoint": "U+0162",
+    "unicode_name": "LATIN CAPITAL LETTER T WITH CEDILLA",
+    "base_char": "T",
+    "confused_with": "E"
+  },
+  "T_2": {
+    "unicode": "Ť",
+    "codepoint": "U+0164",
+    "unicode_name": "LATIN CAPITAL LETTER T WITH CARON",
+    "base_char": "T",
+    "confused_with": "N"
+  },
+  "T_3": {
+    "unicode": "Ț",
+    "codepoint": "U+021A",
+    "unicode_name": "LATIN CAPITAL LETTER T WITH COMMA BELOW",
+    "base_char": "T",
+    "confused_with": "Y"
+  },
+  "U_1": {
+    "unicode": "Ù",
+    "codepoint": "U+00D9",
+    "unicode_name": "LATIN CAPITAL LETTER U WITH GRAVE",
+    "base_char": "U",
+    "confused_with": "O"
+  },
+  "V_1": {
+    "unicode": "Ṽ",
+    "codepoint": "U+1E7C",
+    "unicode_name": "LATIN CAPITAL LETTER V WITH TILDE",
+    "base_char": "V",
+    "confused_with": "Y"
+  },
+  "a_1": {
+    "unicode": "à",
+    "codepoint": "U+00E0",
+    "unicode_name": "LATIN SMALL LETTER A WITH GRAVE",
+    "base_char": "a",
+    "confused_with": "o"
+  },
+  "a_2": {
+    "unicode": "á",
+    "codepoint": "U+00E1",
+    "unicode_name": "LATIN SMALL LETTER A WITH ACUTE",
+    "base_char": "a",
+    "confused_with": "e"
+  },
+  "a_3": {
+    "unicode": "â",
+    "codepoint": "U+00E2",
+    "unicode_name": "LATIN SMALL LETTER A WITH CIRCUMFLEX",
+    "base_char": "a",
+    "confused_with": "g"
+  },
+  "c_1": {
+    "unicode": "ç",
+    "codepoint": "U+00E7",
+    "unicode_name": "LATIN SMALL LETTER C WITH CEDILLA",
+    "base_char": "c",
+    "confused_with": "e"
+  },
+  "c_2": {
+    "unicode": "ć",
+    "codepoint": "U+0107",
+    "unicode_name": "LATIN SMALL LETTER C WITH ACUTE",
+    "base_char": "c",
+    "confused_with": "o"
+  },
+  "c_3": {
+    "unicode": "ĉ",
+    "codepoint": "U+0109",
+    "unicode_name": "LATIN SMALL LETTER C WITH CIRCUMFLEX",
+    "base_char": "c",
+    "confused_with": "s"
+  },
+  "e_1": {
+    "unicode": "è",
+    "codepoint": "U+00E8",
+    "unicode_name": "LATIN SMALL LETTER E WITH GRAVE",
+    "base_char": "e",
+    "confused_with": "a"
+  },
+  "g_1": {
+    "unicode": "ĝ",
+    "codepoint": "U+011D",
+    "unicode_name": "LATIN SMALL LETTER G WITH CIRCUMFLEX",
+    "base_char": "g",
+    "confused_with": "q"
+  },
+  "h_1": {
+    "unicode": "ĥ",
+    "codepoint": "U+0125",
+    "unicode_name": "LATIN SMALL LETTER H WITH CIRCUMFLEX",
+    "base_char": "h",
+    "confused_with": "n"
+  },
+  "i_1": {
+    "unicode": "ì",
+    "codepoint": "U+00EC",
+    "unicode_name": "LATIN SMALL LETTER I WITH GRAVE",
+    "base_char": "i",
+    "confused_with": "t"
+  },
+  "i_2": {
+    "unicode": "í",
+    "codepoint": "U+00ED",
+    "unicode_name": "LATIN SMALL LETTER I WITH ACUTE",
+    "base_char": "i",
+    "confused_with": "a"
+  },
+  "i_3": {
+    "unicode": "î",
+    "codepoint": "U+00EE",
+    "unicode_name": "LATIN SMALL LETTER I WITH CIRCUMFLEX",
+    "base_char": "i",
+    "confused_with": "l"
+  },
+  "l_1": {
+    "unicode": "ĺ",
+    "codepoint": "U+013A",
+    "unicode_name": "LATIN SMALL LETTER L WITH ACUTE",
+    "base_char": "l",
+    "confused_with": "i"
+  },
+  "l_2": {
+    "unicode": "ļ",
+    "codepoint": "U+013C",
+    "unicode_name": "LATIN SMALL LETTER L WITH CEDILLA",
+    "base_char": "l",
+    "confused_with": "t"
+  },
+  "l_3": {
+    "unicode": "ľ",
+    "codepoint": "U+013E",
+    "unicode_name": "LATIN SMALL LETTER L WITH CARON",
+    "base_char": "l",
+    "confused_with": "0"
+  },
+  "n_1": {
+    "unicode": "ñ",
+    "codepoint": "U+00F1",
+    "unicode_name": "LATIN SMALL LETTER N WITH TILDE",
+    "base_char": "n",
+    "confused_with": "h"
+  },
+  "n_2": {
+    "unicode": "ń",
+    "codepoint": "U+0144",
+    "unicode_name": "LATIN SMALL LETTER N WITH ACUTE",
+    "base_char": "n",
+    "confused_with": "m"
+  },
+  "o_1": {
+    "unicode": "ò",
+    "codepoint": "U+00F2",
+    "unicode_name": "LATIN SMALL LETTER O WITH GRAVE",
+    "base_char": "o",
+    "confused_with": "a"
+  },
+  "o_2": {
+    "unicode": "ó",
+    "codepoint": "U+00F3",
+    "unicode_name": "LATIN SMALL LETTER O WITH ACUTE",
+    "base_char": "o",
+    "confused_with": "e"
+  },
+  "o_3": {
+    "unicode": "ô",
+    "codepoint": "U+00F4",
+    "unicode_name": "LATIN SMALL LETTER O WITH CIRCUMFLEX",
+    "base_char": "o",
+    "confused_with": "c"
+  },
+  "r_1": {
+    "unicode": "ŕ",
+    "codepoint": "U+0155",
+    "unicode_name": "LATIN SMALL LETTER R WITH ACUTE",
+    "base_char": "r",
+    "confused_with": "o"
+  },
+  "r_2": {
+    "unicode": "ŗ",
+    "codepoint": "U+0157",
+    "unicode_name": "LATIN SMALL LETTER R WITH CEDILLA",
+    "base_char": "r",
+    "confused_with": "t"
+  },
+  "r_3": {
+    "unicode": "ř",
+    "codepoint": "U+0159",
+    "unicode_name": "LATIN SMALL LETTER R WITH CARON",
+    "base_char": "r",
+    "confused_with": "v"
+  },
+  "s_1": {
+    "unicode": "ś",
+    "codepoint": "U+015B",
+    "unicode_name": "LATIN SMALL LETTER S WITH ACUTE",
+    "base_char": "s",
+    "confused_with": "a"
+  },
+  "s_2": {
+    "unicode": "ŝ",
+    "codepoint": "U+015D",
+    "unicode_name": "LATIN SMALL LETTER S WITH CIRCUMFLEX",
+    "base_char": "s",
+    "confused_with": "e"
+  },
+  "s_3": {
+    "unicode": "ş",
+    "codepoint": "U+015F",
+    "unicode_name": "LATIN SMALL LETTER S WITH CEDILLA",
+    "base_char": "s",
+    "confused_with": "r"
+  },
+  "t_1": {
+    "unicode": "ţ",
+    "codepoint": "U+0163",
+    "unicode_name": "LATIN SMALL LETTER T WITH CEDILLA",
+    "base_char": "t",
+    "confused_with": "l"
+  }
+}

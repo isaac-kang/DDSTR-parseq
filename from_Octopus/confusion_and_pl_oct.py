@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-Step 1: Generate character-level confusion matrix from pretrained model on train data.
-        Extract confused classes per character and create extended class mapping.
-Step 2: Perform Pseudo-Labeling (PL) on train datasets using the confusion mapping.
+Step 1: Generate character-level confusion matrix from pretrained model on 6 benchmark datasets.
+        Extract top-3 confused classes per character and create extended class mapping.
+Step 2: Perform Pseudo-Labeling (PL) on SVT train set using the confusion mapping.
 """
 
 import argparse
 import json
 import string
-import sys
 import unicodedata
 from collections import defaultdict
 from pathlib import Path
@@ -16,9 +15,6 @@ from pathlib import Path
 import numpy as np
 import torch
 from tqdm import tqdm
-
-# Allow running from tools/ directory
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from strhub.data.module import SceneTextDataModule
 from strhub.data.utils import CharsetAdapter
@@ -176,65 +172,39 @@ def needleman_wunsch_align(s1, s2, match_score=1, mismatch_score=-1, gap_score=-
     return alignment
 
 
-def build_confusion_matrix(model, data_root, cm_src_data_dirs, charset, device, batch_size=512, num_workers=4):
+def build_confusion_matrix(model, datamodule, test_sets, charset, device):
     """
-    Run inference on train datasets and build a character-level confusion matrix.
+    Run inference on benchmark datasets and build a character-level confusion matrix.
     Uses Needleman-Wunsch alignment to handle length mismatches.
     confusion[gt_char][pred_char] = count (only for substitutions, not gaps)
     """
-    import glob as glob_mod
-
     confusion = defaultdict(lambda: defaultdict(int))
     charset_adapter = CharsetAdapter(charset)
-    transform = SceneTextDataModule.get_transform(model.hparams.img_size)
 
-    from strhub.data.dataset import LmdbDataset
-    from torch.utils.data import DataLoader
+    for name, dataloader in datamodule.test_dataloaders(test_sets).items():
+        print(f'Processing {name}...')
+        for imgs, labels in tqdm(iter(dataloader), desc=name):
+            imgs = imgs.to(device)
+            logits = model(imgs)
+            probs = logits.softmax(-1)
+            preds, _ = model.tokenizer.decode(probs)
 
-    for cf_data_dir in cm_src_data_dirs:
-        train_root = Path(data_root) / cf_data_dir
-        lmdb_dirs = sorted(
-            Path(p).parent
-            for p in glob_mod.glob(str(train_root / '**' / 'data.mdb'), recursive=True)
-        )
-        if not lmdb_dirs:
-            print(f'WARNING: No LMDB found under {train_root}')
-            continue
-
-        for lmdb_dir in lmdb_dirs:
-            ds_name = str(lmdb_dir.relative_to(train_root))
-            dataset = LmdbDataset(
-                str(lmdb_dir), charset, model.hparams.max_label_length,
-                remove_whitespace=True, normalize_unicode=True, transform=transform,
-            )
-            dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
-            print(f'Processing {cf_data_dir}/{ds_name} ({len(dataset)} samples)...')
-
-            for imgs, labels in tqdm(iter(dataloader), desc=ds_name):
-                imgs = imgs.to(device)
-                logits = model(imgs)
-                probs = logits.softmax(-1)
-                preds, _ = model.tokenizer.decode(probs)
-
-                for pred, gt in zip(preds, labels):
-                    pred = charset_adapter(pred)
-                    aligned = needleman_wunsch_align(gt, pred)
-                    for gt_ch, pred_ch in aligned:
-                        if gt_ch is not None and pred_ch is not None:
-                            # Case-insensitive: treat case-only difference as correct
-                            if gt_ch.lower() == pred_ch.lower():
-                                confusion[gt_ch][gt_ch] += 1
-                            else:
-                                confusion[gt_ch][pred_ch] += 1
-                        # Gaps (insertion/deletion) are skipped for confusion matrix
+            for pred, gt in zip(preds, labels):
+                pred = charset_adapter(pred)
+                aligned = needleman_wunsch_align(gt, pred)
+                for gt_ch, pred_ch in aligned:
+                    if gt_ch is not None and pred_ch is not None:
+                        # Substitution or match — record in confusion matrix
+                        confusion[gt_ch][pred_ch] += 1
+                    # Gaps (insertion/deletion) are skipped for confusion matrix
 
     return confusion
 
 
-def extract_confusions(confusion, charset, min_rate=0.001, top_k=3, min_count=2):
+def extract_confusions(confusion, charset, min_rate=0.001):
     """
-    For each character in charset, find top-k confused characters
-    whose confusion rate >= min_rate and count >= min_count.
+    For each character in charset, find ALL confused characters
+    whose confusion rate >= min_rate (default 0.1%).
     Returns:
         mapping: dict[str, list[str]] - e.g., {'B': ['8', 'D']}
         extended_classes: dict[str, list[str]] - e.g., {'B': ['B', 'B_1', 'B_2']}
@@ -257,11 +227,9 @@ def extract_confusions(confusion, charset, min_rate=0.001, top_k=3, min_count=2)
         if not confused:
             continue
 
-        # Sort by count descending, filter by threshold and min_count, take top-k
+        # Sort by count descending, include ALL that pass threshold
         sorted_confused = sorted(confused.items(), key=lambda x: (-x[1], x[0]))
-        filtered = [(c, cnt) for c, cnt in sorted_confused if cnt / total >= min_rate and cnt >= min_count]
-        if top_k > 0:
-            filtered = filtered[:top_k]
+        filtered = [(c, cnt) for c, cnt in sorted_confused if cnt / total >= min_rate]
 
         if not filtered:
             continue
@@ -307,7 +275,7 @@ def _apply_pl(gt, pred, confusion_map):
             continue
         if pred_ch is None:
             pl_chars.append(gt_ch)
-        elif gt_ch.lower() == pred_ch.lower():
+        elif gt_ch == pred_ch:
             pl_chars.append(gt_ch)
         elif gt_ch in confusion_map and pred_ch in confusion_map[gt_ch]:
             pl_chars.append(confusion_map[gt_ch][pred_ch])
@@ -391,8 +359,9 @@ def perform_pl(model, dataset_path, dataset_name, charset, confusion_detail, ext
         lmdb_output_path = Path(lmdb_output_path)
         lmdb_output_path.mkdir(parents=True, exist_ok=True)
 
+        # Use source data.mdb file size with generous margin
         src_mdb = Path(dataset_path) / 'data.mdb'
-        map_size = max(int(src_mdb.stat().st_size * 1.5), 1024 * 1024 * 100)
+        map_size = max(src_mdb.stat().st_size * 10, 1024 * 1024 * 100)  # 10x or at least 100MB
 
         dst_env = lmdb_lib.open(str(lmdb_output_path), map_size=map_size)
         with src_env.begin() as src_txn, dst_env.begin(write=True) as dst_txn:
@@ -433,32 +402,11 @@ def main():
     parser.add_argument('--output_dir', default='confusion_pl_output', help='Output directory')
     parser.add_argument('--min_rate', type=float, default=0.001,
                         help='Minimum confusion rate to assign extended class (default: 0.001 = 0.1%%)')
-    parser.add_argument('--top_k', type=int, default=3,
-                        help='Max confused classes per character (-1 for unlimited, default: 3)')
-    parser.add_argument('--min_count', type=int, default=2,
-                        help='Minimum confusion count to include (default: 2)')
-    parser.add_argument('--cm_src_data_dirs', nargs='+', default=['train/real'],
-                        help='Train subdirectories for confusion matrix (e.g., real)')
-    parser.add_argument('--pl_datasets', nargs='+', default=['train/real'],
-                        help='Datasets to perform PL on, relative to data_root (e.g., train/real)')
-    parser.add_argument('--pl_output_root', default=None,
-                        help='Root dir for decomposed LMDB output (default: <data_root>/decomposed)')
-    parser.add_argument('--skip_pl', action='store_true',
-                        help='Skip PL dataset generation (Step 2), only build confusion matrix')
-    parser.add_argument('--confusion_matrix', default=None,
-                        help='Path to existing confusion_matrix.npy (skip Step 1 if provided)')
+    parser.add_argument('--pl_datasets', nargs='+', default=['val/SVT'],
+                        help='Datasets to perform PL on, relative to data_root (e.g., val/SVT val/IC15)')
     parser.add_argument('--save_text', action='store_true',
                         help='Save PL results as text file (optional)')
     args = parser.parse_args()
-
-    # Resolve paths (expand ~ and make absolute)
-    args.data_root = str(Path(args.data_root).expanduser().resolve())
-    args.output_dir = str(Path(args.output_dir).expanduser().resolve())
-
-    if args.pl_output_root is None:
-        args.pl_output_root = str(Path(args.data_root) / 'decomposed')
-    else:
-        args.pl_output_root = str(Path(args.pl_output_root).expanduser().resolve())
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -467,64 +415,52 @@ def main():
     charset = string.digits + string.ascii_lowercase + string.ascii_uppercase
     print(f'Charset: {charset}')
 
+    # Load model
+    print('Loading model...')
+    model = load_from_checkpoint(args.checkpoint, charset_test=charset).eval().to(args.device)
+    hp = model.hparams
+
+    datamodule = SceneTextDataModule(
+        args.data_root, '_unused_', hp.img_size, hp.max_label_length,
+        hp.charset_train, charset,
+        args.batch_size, args.num_workers, False,
+    )
+
+    # ==================== Step 1 ====================
+    print('\n' + '=' * 60)
+    print('Step 1: Building confusion matrix from 6 benchmark datasets')
+    print('=' * 60)
+
+    # Use the 6 benchmark (full) datasets
+    test_sets = list(SceneTextDataModule.TEST_BENCHMARK)
+    confusion = build_confusion_matrix(model, datamodule, test_sets, charset, args.device)
+
+    # Save raw confusion matrix as numpy array
     chars = sorted(charset)
     char_to_idx = {c: i for i, c in enumerate(chars)}
     n = len(chars)
-
-    if args.confusion_matrix:
-        # ==================== Skip Step 1: Load existing confusion matrix ====================
-        cm_path = str(Path(args.confusion_matrix).expanduser().resolve())
-        print(f'\nLoading existing confusion matrix from {cm_path}')
-        cm = np.load(cm_path)
-        assert cm.shape == (n, n), f'Expected shape ({n}, {n}), got {cm.shape}'
-
-        # Reconstruct confusion dict from numpy array
-        confusion = defaultdict(lambda: defaultdict(int))
-        for i, gt_ch in enumerate(chars):
-            for j, pred_ch in enumerate(chars):
-                if cm[i, j] > 0:
-                    confusion[gt_ch][pred_ch] = int(cm[i, j])
-        print(f'Loaded confusion matrix: {n}x{n}')
-        model = None
-    else:
-        # Load model
-        print('Loading model...')
-        model = load_from_checkpoint(args.checkpoint, charset_test=charset).eval().to(args.device)
-
-        # ==================== Step 1 ====================
-        print('\n' + '=' * 60)
-        print(f'Step 1: Building confusion matrix from train data ({", ".join(args.cm_src_data_dirs)})')
-        print('=' * 60)
-
-        confusion = build_confusion_matrix(
-            model, args.data_root, args.cm_src_data_dirs, charset, args.device,
-            args.batch_size, args.num_workers,
-        )
-
-        # Save raw confusion matrix as numpy array
-        cm = np.zeros((n, n), dtype=np.int64)
-        for gt_ch, preds in confusion.items():
-            if gt_ch not in char_to_idx:
+    cm = np.zeros((n, n), dtype=np.int64)
+    for gt_ch, preds in confusion.items():
+        if gt_ch not in char_to_idx:
+            continue
+        for pred_ch, count in preds.items():
+            if pred_ch not in char_to_idx:
                 continue
-            for pred_ch, count in preds.items():
-                if pred_ch not in char_to_idx:
-                    continue
-                cm[char_to_idx[gt_ch], char_to_idx[pred_ch]] = count
+            cm[char_to_idx[gt_ch], char_to_idx[pred_ch]] = count
 
-        np.save(output_dir / 'confusion_matrix.npy', cm)
+    np.save(output_dir / 'confusion_matrix.npy', cm)
 
-        # Save confusion matrix as readable CSV
-        csv_path = output_dir / 'confusion_matrix.csv'
-        with open(csv_path, 'w') as f:
-            f.write('gt\\pred,' + ','.join(chars) + '\n')
-            for i, ch in enumerate(chars):
-                f.write(ch + ',' + ','.join(str(cm[i, j]) for j in range(n)) + '\n')
-        print(f'Confusion matrix saved to {csv_path}')
+    # Save confusion matrix as readable CSV
+    csv_path = output_dir / 'confusion_matrix.csv'
+    with open(csv_path, 'w') as f:
+        f.write('gt\\pred,' + ','.join(chars) + '\n')
+        for i, ch in enumerate(chars):
+            f.write(ch + ',' + ','.join(str(cm[i, j]) for j in range(n)) + '\n')
+    print(f'Confusion matrix saved to {csv_path}')
 
     # Extract top-3 confusions and create extended class mapping (with threshold)
     print(f'\nConfusion rate threshold: {args.min_rate*100:.1f}%')
-    mapping, extended_classes, confusion_detail = extract_confusions(
-        confusion, charset, min_rate=args.min_rate, top_k=args.top_k, min_count=args.min_count)
+    mapping, extended_classes, confusion_detail = extract_confusions(confusion, charset, min_rate=args.min_rate)
 
     # Save the mapping
     mapping_path = output_dir / 'confusion_mapping.json'
@@ -631,41 +567,6 @@ def main():
     lines.append(f'New total class count: {len(charset) + total_extended}')
     lines.append('')
 
-    # ── Reverse Table: grouped by predicted (confused_with) character ──
-    # Build reverse mapping: pred_char -> [(gt_char, ext_name, count, rate), ...]
-    reverse_confused = defaultdict(list)
-    for ch in sorted(confusion_detail.keys()):
-        d = confusion_detail[ch]
-        for i, t in enumerate(d['confused']):
-            ext_name = d['extended_classes'][i + 1]
-            reverse_confused[t['char']].append({
-                'gt_char': ch,
-                'ext_name': ext_name,
-                'count': t['count'],
-                'rate': t['rate'],
-            })
-
-    lines.append('Reverse Confusion Table  (grouped by predicted character)')
-    lines.append('=' * 90)
-    rhdr = (f'│ {"Pred":^5} │ {"GT":^5} │ {"ExtClass":^10} │ {"Count":>7} │ {"Rate(%)":>9} │')
-    rsep = '├' + '─' * 7 + '┼' + '─' * 7 + '┼' + '─' * 12 + '┼' + '─' * 9 + '┼' + '─' * 11 + '┤'
-    rtop = '┌' + '─' * 7 + '┬' + '─' * 7 + '┬' + '─' * 12 + '┬' + '─' * 9 + '┬' + '─' * 11 + '┐'
-    rbot = '└' + '─' * 7 + '┴' + '─' * 7 + '┴' + '─' * 12 + '┴' + '─' * 9 + '┴' + '─' * 11 + '┘'
-    lines.append(rtop)
-    lines.append(rhdr)
-    lines.append(rsep)
-
-    for pred_ch in sorted(reverse_confused.keys()):
-        entries = sorted(reverse_confused[pred_ch], key=lambda x: -x['count'])
-        for i, e in enumerate(entries):
-            pred_col = f'  {pred_ch:^3}  ' if i == 0 else f' {"":5} '
-            lines.append(f'│{pred_col}│  {e["gt_char"]:^3}  │'
-                         f' {e["ext_name"]:<10} │ {e["count"]:>7} │ {e["rate"]*100:>8.3f}% │')
-        lines.append(rsep)
-
-    lines.append(rbot)
-    lines.append('')
-
     # List all extended classes compactly
     lines.append('All extended classes (name -> unicode):')
     all_ext = []
@@ -684,46 +585,19 @@ def main():
     print(f'\n{summary_text}')
 
     # ==================== Step 2 ====================
-    if args.skip_pl:
-        print('\nSkipping Step 2 (PL dataset generation) as requested.')
-    elif model is None:
-        print('\nSkipping Step 2: no model loaded (--confusion_matrix mode). Use --checkpoint to enable PL.')
-    else:
-        import glob as glob_mod
-        print('\n' + '=' * 60)
-        print('Step 2: Pseudo-Labeling')
-        print('=' * 60)
+    print('\n' + '=' * 60)
+    print('Step 2: Pseudo-Labeling')
+    print('=' * 60)
 
-        for pl_ds in args.pl_datasets:
-            ds_abs = Path(args.data_root) / pl_ds
-
-            # Auto-discover sub-LMDBs: if ds_abs itself is a leaf LMDB, use it directly.
-            # Otherwise, find all data.mdb files underneath and process each sub-LMDB.
-            if (ds_abs / 'data.mdb').exists():
-                sub_lmdbs = [ds_abs]
-            else:
-                sub_lmdbs = sorted(
-                    Path(p).parent
-                    for p in glob_mod.glob(str(ds_abs / '**' / 'data.mdb'), recursive=True)
-                )
-
-            if not sub_lmdbs:
-                print(f'\nWARNING: No LMDB found under {ds_abs}, skipping.')
-                continue
-
-            print(f'\nFound {len(sub_lmdbs)} LMDB(s) under {pl_ds}')
-            for lmdb_dir in sub_lmdbs:
-                # Compute relative path from data_root for naming/output
-                rel = str(lmdb_dir.relative_to(Path(args.data_root)))
-                ds_name = rel.replace('/', '_')
-                lmdb_out = str(Path(args.pl_output_root) / rel)
-                print(f'\n  Dataset: {rel} ({lmdb_dir})')
-                print(f'    LMDB output: {lmdb_out}')
-                perform_pl(model, str(lmdb_dir), ds_name, charset,
-                           confusion_detail, ext_to_unicode,
-                           args.device, output_dir, save_lmdb=True,
-                           lmdb_output_path=lmdb_out,
-                           save_text=args.save_text)
+    for pl_ds in args.pl_datasets:
+        ds_path = str(Path(args.data_root) / pl_ds)
+        ds_name = pl_ds.replace('/', '_')
+        lmdb_out = str(Path(args.data_root) / 'PL' / pl_ds)
+        print(f'\nDataset: {pl_ds} ({ds_path})')
+        print(f'  LMDB output: {lmdb_out}')
+        perform_pl(model, ds_path, ds_name, charset, confusion_detail, ext_to_unicode,
+                   args.device, output_dir, save_lmdb=True, lmdb_output_path=lmdb_out,
+                   save_text=args.save_text)
 
     print(f'\nAll outputs saved to {output_dir}/')
 
